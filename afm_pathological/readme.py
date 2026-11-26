@@ -69,6 +69,40 @@ _LANDING_TIME = (
     'request. The request header `X-Pathological-Date: YYYY-MM-DD` replaces the date for one request, and `/clock` '
     'returns the UTC time, the date and the day number as JSON. Behavior that needs state uses two 30-second slots: '
     'a request in seconds 0 to 29 of the minute is in the error slot, one in seconds 30 to 59 in the ok slot.')
+# Other open-source projects and public sites with a related purpose: name, link, what it is
+RELATED_PROJECTS = (
+    ('crawler-test.com', 'https://www.crawler-test.com/',
+     'A site of test pages for SEO crawlers: titles, description tags, encodings, robots rules, redirects, links, '
+     'canonical tags and status codes.'),
+    ('Security Crawl Maze', 'https://github.com/google/security-crawl-maze',
+     'A test bed for security crawlers. Its pages link to a resource in every way that a web page can, and one '
+     'endpoint returns the URLs that a crawler must find.'),
+    ('HttpCrawlerTestSite', 'https://github.com/cyotek/HttpCrawlerTestSite',
+     'A small PHP site that tests the essential functions of a crawler.'),
+    ('Hamms', 'https://github.com/kevinburke/hamms',
+     'A badly behaved HTTP server for tests of HTTP clients. Each port has one failure: no answer, a slow answer, '
+     'a malformed answer or a closed connection.'),
+    ('pathod', 'https://pypi.org/project/pathod/',
+     'A pathological HTTP daemon. A small language in the URL builds almost any response, a malformed one '
+     'included.'),
+    ('huhhttp', 'https://github.com/chfoo/huhhttp',
+     'An evil web server that fuzz tests crawlers and download tools with malformed and hostile responses.'),
+    ('errorworks (ChaosWeb)', 'https://github.com/johnm-dta/errorworks',
+     'Fake servers that inject faults at configured rates. ChaosWeb is the web server for tests of scrapers.'),
+    ('go-httpbin', 'https://github.com/mccutchen/go-httpbin',
+     'A general HTTP request and response service: status codes, delays, redirects, headers and bodies on '
+     'request.'),
+    ('Toxiproxy', 'https://github.com/Shopify/toxiproxy',
+     'A TCP proxy that adds latency, timeouts and outages between a client and a real server.'),
+    ('toscrape.com', 'https://toscrape.com/',
+     'Practice sites for web scraping (a book store and a quotes site) that exercise data extraction.'),
+    ('Nepenthes', 'https://zadzmo.org/code/nepenthes/',
+     'A tarpit that gives unwanted crawlers an endless maze of slow, generated pages.'),
+    ('iocaine', 'https://iocaine.madhouse-project.org/',
+     'A tarpit that gives unwanted crawlers an endless maze of generated text.'))
+_RELATED_INTRO = (
+    'These open-source projects and public sites also give a crawler, a scraper or an HTTP client something '
+    'difficult to work with.')
 
 
 def readme_markdown(host: HostSpec) -> str:
@@ -101,6 +135,7 @@ def landing_markdown(scheme: str, domain: str) -> str:
     rows = [f'| {name_cell(h.name, h.name)} | {h.character} | {h.root_says} |' for h in HOSTS.values()]
     janus = name_cell('www.janus', f'www.janus.{base}' if base else 'www.janus')
     no_links = [] if base else [_NO_LINKS, '']
+    related = [f'| [{name}]({url}) | {what} |' for name, url, what in RELATED_PROJECTS]
     lines = [
         '# Pathological test site: hosts that misbehave on purpose', '',
         *(line for paragraph in _LANDING_PITCH for line in (paragraph, '')),
@@ -109,6 +144,7 @@ def landing_markdown(scheme: str, domain: str) -> str:
         *rows, '', f'The host `janus` also answers at its second name, {janus}.', '',
         '## How a host is selected', '', _SELECTION.format(url=f'{scheme}://{domain}/'), '',
         '## How time works', '', _LANDING_TIME, '',
+        '## Related Projects', '', _RELATED_INTRO, '', '| Project | What it is |', '| --- | --- |', *related, '',
         '## Source', '', f'The source code is at [{_SOURCE}]({_SOURCE}), under the MIT licence.', '']
     return _sitemap_safe('\n'.join(lines))
 

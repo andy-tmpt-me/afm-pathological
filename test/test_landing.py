@@ -7,7 +7,7 @@ import pytest
 
 from afm_pathological.hosts import HOSTS
 from afm_pathological.model import Request
-from afm_pathological.readme import landing_markdown
+from afm_pathological.readme import RELATED_PROJECTS, landing_markdown
 from afm_pathological.site import respond
 from test_readme import FORBIDDEN, _visible_words
 
@@ -58,6 +58,9 @@ def test_pathological_host_header_wins(fetch):
     assert fetch('/', host='localhost:8080', headers={'x-pathological-host': ''}).status == 200
 
 
+SOURCE = 'https://github.com/andy-tmpt-me/afm-pathological'
+# The links after the host table: the related projects, then the source
+TAIL_LINKS = [url for _, url, _ in RELATED_PROJECTS] + [SOURCE]
 INTRO_LINKS = ['https://pathological.answersfrom.me', 'https://github.com/andy-tmpt-me/afm-pathological']
 
 
@@ -74,12 +77,12 @@ def test_host_links_use_scheme_and_site_domain(scheme, host):
     """Each host is linked once, in table order, with the scheme and the site domain; www.janus has a link too."""
     links = _links(scheme, host)
     assert links[:len(HOSTS)] == [f'{scheme}://{name}.{host}/' for name in HOSTS]
-    assert links[len(HOSTS):] == [f'{scheme}://www.janus.{host}/', 'https://github.com/andy-tmpt-me/afm-pathological']
+    assert links[len(HOSTS):] == [f'{scheme}://www.janus.{host}/', *TAIL_LINKS]
 
 
 def test_table_has_each_host_once():
     """The table has one row per host with its character and root text."""
-    markdown = landing_markdown('https', DOMAIN)
+    markdown = landing_markdown('https', DOMAIN).split('## How a host is selected')[0]
     rows = [line for line in markdown.splitlines() if line.startswith('| [')]
     assert [re.match(r'\| \[([^\]]+)\]', row).group(1) for row in rows] == list(HOSTS)
     for row, host in zip(rows, HOSTS.values()):
@@ -123,7 +126,7 @@ def test_loopback_site_domain_links_to_localhost(host, base):
 def test_other_ip_site_domain_has_no_host_links(host):
     """Another IP site domain names the hosts with no link and says to send X-Pathological-Host."""
     html = respond(Request(host=host, path='/', scheme='http')).body.decode()
-    assert _links('http', host) == ['https://github.com/andy-tmpt-me/afm-pathological']
+    assert _links('http', host) == TAIL_LINKS
     assert 'not links: send the request header <code>X-Pathological-Host: &lt;host name&gt;</code>' in html
     assert all(f'<td><code>{name}</code></td>' in html for name in HOSTS)
 
@@ -135,3 +138,14 @@ def test_landing_page_starts_with_the_authors_introduction(fetch):
     assert '<a href="https://pathological.answersfrom.me">' in html
     assert '<a href="https://github.com/andy-tmpt-me/afm-pathological">' in html
     assert 'I hope it fails miserably for you!' in html
+
+
+def test_related_projects_table(fetch):
+    """The Related Projects section is between the time section and the source, with one linked row per project."""
+    html = fetch('/', host=DOMAIN).body.decode()
+    assert html.index('How time works</h2>') < html.index('Related Projects</h2>') < html.index('Source</h2>')
+    assert '<th>Project</th>' in html and '<th>What it is</th>' in html
+    assert len({name for name, _, _ in RELATED_PROJECTS}) == len(RELATED_PROJECTS) >= 10
+    for name, url, what in RELATED_PROJECTS:
+        assert f'<td><a href="{url}">{name}</a></td>' in html
+        assert url.startswith('https://') and what.endswith('.') and '|' not in what
