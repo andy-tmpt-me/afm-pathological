@@ -157,9 +157,9 @@ def _of_operator() -> str:
     return f' of {name}' if name else ''
 
 
-# What a link preview of the landing page shows. The description is "A web server that misbehaves on purpose."
-# in upside-down look-alike letters: the preview misbehaves too
-PREVIEW_TITLE = 'A Pathological Webserver'
+# What a link preview of the landing page shows. The upside-down look-alike letters say "A web server that
+# misbehaves on purpose": the preview misbehaves too. Some platforms show the title only, so the title has them
+PREVIEW_TITLE = 'Pathological Webserver: ǝsodɹnd uo sǝʌɐɥǝqsıɯ ʇɐɥʇ ɹǝʌɹǝs qǝʍ ∀'
 PREVIEW_DESCRIPTION = '˙ǝsodɹnd uo sǝʌɐɥǝqsıɯ ʇɐɥʇ ɹǝʌɹǝs qǝʍ ∀'
 
 

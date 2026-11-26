@@ -7,7 +7,7 @@ import pytest
 
 from afm_pathological.hosts import HOSTS
 from afm_pathological.model import Request
-from afm_pathological.readme import PREVIEW_DESCRIPTION, RELATED_PROJECTS, landing_markdown
+from afm_pathological.readme import PREVIEW_DESCRIPTION, PREVIEW_TITLE, RELATED_PROJECTS, landing_markdown
 from afm_pathological.site import respond
 from test_readme import FORBIDDEN, _visible_words
 
@@ -168,7 +168,8 @@ def test_link_preview_tags(fetch):
     """The landing page has the preview title and the upside-down description in its head; a host README has none."""
     html = fetch('/', host=DOMAIN).body.decode()
     head = html[:html.index('</head>')]
-    assert '<meta property="og:title" content="A Pathological Webserver">' in head
+    assert f'<meta property="og:title" content="{PREVIEW_TITLE}">' in head
+    assert PREVIEW_TITLE.startswith('Pathological Webserver: ') and PREVIEW_TITLE.endswith(PREVIEW_DESCRIPTION[1:])
     assert f'<meta property="og:description" content="{PREVIEW_DESCRIPTION}">' in head
     assert PREVIEW_DESCRIPTION[::-1].startswith('∀ ') and PREVIEW_DESCRIPTION.startswith('˙')
     for other in (fetch('/'), fetch('/README.md', host=DOMAIN)):
