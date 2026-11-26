@@ -187,3 +187,18 @@ def test_pages_fit_a_narrow_screen(fetch):
         assert '<meta name="viewport" content="width=device-width, initial-scale=1">' in html
         assert '<style>table, pre {display: block; overflow-x: auto}</style>' in html
         assert fetch('/', host=host).headers['cache-control'] == 'no-cache'
+
+
+def test_favicon_variable(fetch, monkeypatch):
+    """With the favicon variable each README and the landing page link the icon; no other page does, nor without it."""
+    monkeypatch.delenv('PATHOLOGICAL_FAVICON', raising=False)
+    plain = fetch('/').body.decode()
+    assert 'rel="icon"' not in plain and 'rel="icon"' not in fetch('/', host='localhost:8080').body.decode()
+    monkeypatch.setenv('PATHOLOGICAL_FAVICON', ' https://example.com/i.png?a=1&b=2 ')
+    link = '<link rel="icon" href="https://example.com/i.png?a=1&amp;b=2">'
+    for host in ('breadcrumbs', 'janus', 'localhost:8080'):
+        html = fetch('/', host=host).body.decode()
+        assert html.count(link) == 1 and html.index(link) < html.index('</head>'), host
+    assert fetch('/').body.decode().replace(link + '\n', '') == plain
+    assert 'rel="icon"' not in fetch('/articles/starter').body.decode()
+    assert 'rel="icon"' not in fetch('/README.md').body.decode()

@@ -6,7 +6,7 @@ time.
 You already know that web servers are assholes if you've ever done any web crawling or scraping: they lie about
 timestamps, have missing or outdated sitemaps, return empty responses, and so much more.
 
-So over the holiday weekend I built a misbehaving web server that predictably exhibits all of the pathologies I've
+So I built a misbehaving web server that predictably exhibits all of the pathologies I've
 seen over the years. Honestly I should have done this decades ago. It's live at https://pathological.answersfrom.me,
 or you can build and host it yourself.
 
@@ -119,7 +119,8 @@ Each host serves the same page families at the same paths, unless the table of h
 A public instance runs at `https://pathological.answersfrom.me/`, a landing page that links to every host, and at
 `https://<host>.pathological.answersfrom.me/`, for example `https://breadcrumbs.pathological.answersfrom.me/`.
 It is best effort: it can be rate-limited or capped at any time. Every response has
-`X-Robots-Tag: noindex, nofollow`.
+`X-Robots-Tag: noindex, nofollow`, except the landing page: its `robots.txt` allows `/` only, so that a search
+engine or a link preview can read that one page.
 
 ## Configuration
 
@@ -128,9 +129,11 @@ It is best effort: it can be rate-limited or capped at any time. Every response 
 | `PORT` | The port that the server listens on | `8080` |
 | `PATHOLOGICAL_OPERATOR` | Who runs the site, named in each host README | `Answers From Me` |
 
+| `PATHOLOGICAL_FAVICON` | The URL of an icon for the browser tab of each README and of the landing page | none |
+
 An operator sets `PATHOLOGICAL_OPERATOR` to their own name; an empty value shows no name.
 
-`make run` passes `PATHOLOGICAL_OPERATOR` from your shell to the container:
+`make run` passes `PATHOLOGICAL_OPERATOR` and `PATHOLOGICAL_FAVICON` from your shell to the container:
 
 ```bash
 PATHOLOGICAL_OPERATOR='Example Corp' make run

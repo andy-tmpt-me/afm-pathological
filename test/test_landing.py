@@ -39,7 +39,7 @@ def test_site_domain_paths(fetch):
     assert json.loads(fetch('/clock', host=DOMAIN).body)['date'] == '2026-11-25'
     robots = fetch('/robots.txt', host=DOMAIN)
     assert robots.headers['content-type'].startswith('text/plain')
-    assert robots.body.decode() == 'User-agent: *\nDisallow: /\n'
+    assert robots.body.decode() == 'User-agent: *\nAllow: /$\nDisallow: /\n'
     for path in ('/articles/starter', '/sitemap.xml', '/feed', '/nothing'):
         response = fetch(path, host=DOMAIN)
         assert response.status == 404 and response.headers['content-type'].startswith('text/plain'), path
@@ -105,12 +105,25 @@ def test_landing_page_rules(fetch):
 
 
 def test_landing_page_goes_through_finish(fetch):
-    """The landing page has validators, answers 304 to a matching conditional GET and has noindex."""
+    """The landing page has validators and answers 304 to a matching conditional GET."""
     response = fetch('/', host=DOMAIN)
-    assert response.headers['x-robots-tag'] == 'noindex, nofollow' and 'last-modified' in response.headers
+    assert 'last-modified' in response.headers
     again = fetch('/', host=DOMAIN, headers={'if-none-match': response.headers['etag']})
     assert again.status == 304 and again.body == b''
-    assert fetch('/nothing', host=DOMAIN).headers['x-robots-tag'] == 'noindex, nofollow'
+
+
+def test_only_the_landing_page_can_be_indexed(fetch):
+    """The landing page has no noindex, also as HEAD and as 304; each other answer of the site has noindex."""
+    response = fetch('/', host=DOMAIN)
+    not_modified = fetch('/', host=DOMAIN, headers={'if-none-match': response.headers['etag']})
+    for landing in (response, not_modified, fetch('/', host=DOMAIN, method='HEAD'), fetch('/', host='localhost:8080')):
+        assert landing.headers['x-robots-tag'] == 'nofollow'
+    for path in ('/README.md', '/robots.txt', '/clock', '/nothing'):
+        assert fetch(path, host=DOMAIN).headers['x-robots-tag'] == 'noindex, nofollow', path
+    for name in HOSTS:
+        assert fetch('/', host=f'{name}.{DOMAIN}').headers.get('x-robots-tag') in ('noindex, nofollow', None), name
+    assert fetch('/', host=DOMAIN, headers={'x-pathological-host': 'breadcrumbs'}).headers['x-robots-tag'] == \
+        'noindex, nofollow'
 
 
 @pytest.mark.parametrize('host, base', [('127.0.0.1:8080', 'localhost:8080'), ('[::1]:8080', 'localhost:8080'),

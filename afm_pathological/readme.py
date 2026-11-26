@@ -11,6 +11,8 @@ _DOMAIN = 'pathological.answersfrom.me'
 # The name of who runs the site, shown in each host README: unset means the default, empty or blank means no name
 OPERATOR_VARIABLE = 'PATHOLOGICAL_OPERATOR'
 DEFAULT_OPERATOR = 'Answers From Me'
+# The URL of an icon for the browser tab of each README and of the landing page: unset or blank means no icon
+FAVICON_VARIABLE = 'PATHOLOGICAL_FAVICON'
 _INTRO = (
     'This host is part of the pathological test site{operator}, a web server with predictable bad behavior for '
     'tests of crawlers and scrapers. Each host of the site behaves like one kind of difficult website, and each '
@@ -43,7 +45,7 @@ _LANDING_PITCH = (
     'the time.',
     'You already know that web servers are assholes if you\'ve ever done any web crawling or scraping: they lie '
     'about timestamps, have missing or outdated sitemaps, return empty responses, and so much more.',
-    'So over the holiday weekend I built a misbehaving web server that predictably exhibits all of the pathologies '
+    'So I built a misbehaving web server that predictably exhibits all of the pathologies '
     'I\'ve seen over the years. Honestly I should have done this decades ago. It\'s live at '
     f'[{_DEMO}]({_DEMO}), or you can build and host it yourself ([{_SOURCE}]({_SOURCE})).',
     'If you do anything with web crawling or scraping, feel free to give it a try. I hope it fails miserably for '
@@ -61,7 +63,7 @@ _SELECTION = (
     '`X-Pathological-Host: <host name>` replaces the `Host` header, so `curl -H \'X-Pathological-Host: breadcrumbs\' '
     '{url}` reaches `breadcrumbs` through this address; a value that is not a host name answers 404 with the list '
     'of host names on every path. With no such header, a `Host` that names no host answers this page at `/` (as '
-    'Markdown at `/README.md`), `/clock`, a `robots.txt` that disallows all, and 404 on every other path.')
+    'Markdown at `/README.md`), `/clock`, a `robots.txt` that allows only this page, and 404 on every other path.')
 _NO_LINKS = ('This server is reached by an IP address, which has no host names under it, so the hosts below are not '
              'links: send the request header `X-Pathological-Host: <host name>` to reach a host.')
 _LANDING_TIME = (
@@ -153,6 +155,12 @@ def _of_operator() -> str:
     """' of <name>' with the operator variable, or the default when it is unset; '' when it is blank."""
     name = os.environ.get(OPERATOR_VARIABLE, DEFAULT_OPERATOR).strip()
     return f' of {name}' if name else ''
+
+
+def favicon_html() -> str:
+    """The <link rel="icon"> line for the head of a page, or '' when the favicon variable is unset or blank."""
+    url = os.environ.get(FAVICON_VARIABLE, '').strip()
+    return f'<link rel="icon" href="{escape(url)}">\n' if url else ''
 
 
 def _link_domain(domain: str) -> Optional[str]:

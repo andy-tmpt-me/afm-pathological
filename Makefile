@@ -34,4 +34,4 @@ image:
 	docker build -t $(IMAGE) .
 
 run:
-	docker run --rm -p 8080:8080 -e PATHOLOGICAL_OPERATOR $(IMAGE)
+	docker run --rm -p 8080:8080 -e PATHOLOGICAL_OPERATOR -e PATHOLOGICAL_FAVICON $(IMAGE)

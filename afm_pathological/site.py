@@ -5,7 +5,6 @@ from email.utils import parsedate_to_datetime
 
 from afm_pathological import catalog, readme
 from afm_pathological.clock import EPOCH, day_number, http_date, today
-from afm_pathological.host_rules import robots
 from afm_pathological.hosts import HOSTS, HostSpec, is_host_root, resolve
 from afm_pathological.model import Request, Response
 from afm_pathological.pages import page
@@ -31,7 +30,8 @@ def _markdown_page(markdown: str, path: str, head_html: str = '') -> Response:
         return text(markdown, content_type='text/markdown; charset=utf-8')
     heading, _, rest = markdown.partition('\n')
     # no-cache: a browser asks again each time, so a person sees a new README right after a deploy
-    return html(page(heading.removeprefix('# '), readme.render(rest.strip('\n')), _NARROW_STYLE + head_html),
+    return html(page(heading.removeprefix('# '), readme.render(rest.strip('\n')),
+                     readme.favicon_html() + _NARROW_STYLE + head_html),
                 headers={'cache-control': 'no-cache'})
 
 
@@ -42,14 +42,21 @@ def _unknown_host() -> Response:
     return response
 
 
+# A robot can read the landing page and nothing else: the longest rule that matches a path wins, `$` ends a path
+_LANDING_ROBOTS = 'User-agent: *\nAllow: /$\nDisallow: /\n'
+
+
 def _landing(request: Request) -> Response:
     """The answer for the site domain, a Host that names no host: the landing page, /clock and robots.txt."""
     if request.path in ('/', '/README.md'):
         domain = request.host.lower().removeprefix('www.')
-        return _markdown_page(readme.landing_markdown(request.scheme, domain), request.path)
+        response = _markdown_page(readme.landing_markdown(request.scheme, domain), request.path)
+        if request.path == '/':  # the one page that a search engine can list; its links are not for a robot
+            response.headers['x-robots-tag'] = 'nofollow'
+        return response
     if request.path == '/clock':
         return _clock(request)
-    return robots(request) if request.path == '/robots.txt' else _unknown_host()
+    return text(_LANDING_ROBOTS) if request.path == '/robots.txt' else _unknown_host()
 
 
 def _answer(host: HostSpec, request: Request) -> Response:
@@ -80,7 +87,7 @@ def _not_modified(request: Request, etag: str, last_modified: str) -> bool:
 
 def finish(request: Request, response: Response) -> Response:
     """Add validators, answer 304 to a matching conditional request, set content-length and strip HEAD bodies."""
-    response.headers['x-robots-tag'] = 'noindex, nofollow'  # no host of the site belongs in a search engine
+    response.headers.setdefault('x-robots-tag', 'noindex, nofollow')  # no host belongs in a search engine
     if response.validators and response.status == 200:
         etag = response.headers.setdefault('etag', f'"{hashlib.sha256(response.body).hexdigest()[:20]}"')
         last_modified = response.headers.setdefault('last-modified', http_date(EPOCH))

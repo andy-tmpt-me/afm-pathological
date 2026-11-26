@@ -57,7 +57,7 @@ def test_usable_date_header_limits():
     ('forwarding-address.pathological.answersfrom.me', '/x', {}),
     ('yes-man.pathological.answersfrom.me', '/anything', {}),
     ('sloth.pathological.answersfrom.me', '/robots.txt', {}),
-    ('nobody.pathological.answersfrom.me', '/', {})])
+    ('nobody.pathological.answersfrom.me', '/nothing', {})])
 @pytest.mark.parametrize('method', ['GET', 'HEAD'])
 def test_every_response_says_noindex(host, path, headers, method):
     """Each response of each host, also 304, 404, 5xx, redirects and the unknown-host answer, has x-robots-tag."""
