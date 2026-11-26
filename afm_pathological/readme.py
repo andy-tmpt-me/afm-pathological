@@ -1,0 +1,185 @@
+import ipaddress
+import os
+import re
+from html import escape
+from typing import Optional
+
+from afm_pathological.catalog import cases
+from afm_pathological.hosts import HOSTS, HostSpec
+
+_DOMAIN = 'pathological.answersfrom.me'
+# The name of who runs the site, shown in each host README: unset means the default, empty or blank means no name
+OPERATOR_VARIABLE = 'PATHOLOGICAL_OPERATOR'
+DEFAULT_OPERATOR = 'Answers From Me'
+_INTRO = (
+    'This host is part of the pathological test site{operator}, a web server with predictable bad behavior for '
+    'tests of crawlers and scrapers. Each host of the site behaves like one kind of difficult website, and each '
+    'page is an article about sourdough baking, so that all pages read as the work of one author. The site keeps no '
+    'state: each answer depends only on the request and its time. This page is the README of the host, for manual '
+    'debugging, and it is also the first page that a crawl of the host root reads.')
+_ROOT_OTHER = ('A host-root URL that is not in a table here (`/robots.txt`, `/sitemap.xml`, the six feed paths and '
+               'each path under `/wp-json/`) answers {} on this host.')
+_TABLE_INTRO = (
+    '{} A URL here is plain text, not a link, so that a crawl of this page reaches only the pages of the list above. '
+    'A segment in angle brackets matches any one path segment, and a last segment that ends in `...>` matches the '
+    'rest of the path. The tag `own source` marks a case that its section page does not link to, so point a crawler '
+    'at the URL itself. The tag `local only` marks a case whose result depends on the second of the request or that '
+    'is slow, so assert on it only with a fixed clock. The tag `production only` marks a case whose result depends '
+    'on the real network path, such as a proxy or a rendering service between the client and the server, so a test '
+    'in the same process cannot show it.')
+_TIME_RULES = (
+    'Content that changes each day uses the day number N: the number of days from 2026-01-01 to the UTC date of the '
+    'request. Content that changes on each request uses the time of the request. The request header '
+    '`X-Pathological-Date: YYYY-MM-DD` replaces the UTC date for one request, for manual checks of a different day. '
+    'Behavior that needs state on a real site uses time slots: a request in seconds 0 to 29 of the minute is in the '
+    'error slot, and a request in seconds 30 to 59 is in the ok slot. A case that fails, then succeeds, answers with '
+    'an error in the first slot and with 200 in the second. `/clock` returns the UTC time, the date and N that the '
+    'site uses, as JSON.')
+_SOURCE = 'https://github.com/andy-tmpt-me/afm-pathological'
+_DEMO = f'https://{_DOMAIN}'
+# The author's own introduction; the public README has the same text
+_LANDING_PITCH = (
+    'Web servers are unpredictable assholes, so I finally decided to build one that is predictably an asshole all '
+    'the time.',
+    'You already know that web servers are assholes if you\'ve ever done any web crawling or scraping: they lie '
+    'about timestamps, have missing or outdated sitemaps, return empty responses, and so much more.',
+    'So over the holiday weekend I built a misbehaving web server that predictably exhibits all of the pathologies '
+    'I\'ve seen over the years. Honestly I should have done this decades ago. It\'s live at '
+    f'[{_DEMO}]({_DEMO}), or you can build and host it yourself ([{_SOURCE}]({_SOURCE})).',
+    'If you do anything with web crawling or scraping, feel free to give it a try. I hope it fails miserably for '
+    'you!')
+_LANDING_INTRO = (
+    'This is a web server with predictable bad behavior, for tests of crawlers, scrapers and HTTP clients. Each host '
+    'name below selects a behavior of the whole host: how it answers `robots.txt`, sitemaps, feeds, HEAD requests, '
+    'conditional requests and user agents. On every host the same page families serve one case per path: redirects, '
+    'wrong content types, pages that change each day, link traps, slow and torn responses and more.',
+    'Each page is an article about sourdough baking, so that all pages read as the work of one author. The server '
+    'keeps no state: each answer depends only on the request and its time. The root page of each host is its README, '
+    'which lists every URL of that host with its behavior.')
+_SELECTION = (
+    'The host is the first label of the `Host` header, after an optional `www.`. The request header '
+    '`X-Pathological-Host: <host name>` replaces the `Host` header, so `curl -H \'X-Pathological-Host: breadcrumbs\' '
+    '{url}` reaches `breadcrumbs` through this address; a value that is not a host name answers 404 with the list '
+    'of host names on every path. With no such header, a `Host` that names no host answers this page at `/` (as '
+    'Markdown at `/README.md`), `/clock`, a `robots.txt` that disallows all, and 404 on every other path.')
+_NO_LINKS = ('This server is reached by an IP address, which has no host names under it, so the hosts below are not '
+             'links: send the request header `X-Pathological-Host: <host name>` to reach a host.')
+_LANDING_TIME = (
+    'Content that changes each day uses the day number: the number of days from 2026-01-01 to the UTC date of the '
+    'request. The request header `X-Pathological-Date: YYYY-MM-DD` replaces the date for one request, and `/clock` '
+    'returns the UTC time, the date and the day number as JSON. Behavior that needs state uses two 30-second slots: '
+    'a request in seconds 0 to 29 of the minute is in the error slot, one in seconds 30 to 59 in the ok slot.')
+
+
+def readme_markdown(host: HostSpec) -> str:
+    """The README of a host as Markdown, from its spec and the catalog."""
+    base = f'https://{host.name}.{_DOMAIN}'
+    rows = [f'| {c.family} | {c.name} | `{path}` | {c.behavior} | {", ".join(t for t in c.tags if t != 'first')} |'
+            for c in cases() for path in c.paths]
+    root_table = ['| URL | Status | Content type | Behavior |', '| --- | --- | --- | --- |',
+                  *(f'| `{u.path}` | {u.status} | {u.content_type} | {u.behavior} |' for u in host.root_urls),
+                  ''] if host.root_urls else []
+    lines = [
+        f'# {host.name}: pathological test site', '', f'{host.character}.', '', _INTRO.format(operator=_of_operator()),
+        '',
+        '## Host root', '', f'{host.root_says}.', '', *root_table, _ROOT_OTHER.format(host.other_root_answer), '',
+        '## Start here', '', *(f'- [{link}]({link})' for link in host.start_links), '',
+        '## All other URLs', '', _TABLE_INTRO.format(host.table_says), '',
+        '| Family | Case | URL | Behavior | Tags |', '| --- | --- | --- | --- | --- |', *rows, '',
+        '## Time rules', '', _TIME_RULES, '',
+        '```bash', f'curl {base}/clock', f"curl -H 'X-Pathological-Date: 2026-03-01' {base}/daily/", '```', '']
+    return _sitemap_safe('\n'.join(lines))
+
+
+def landing_markdown(scheme: str, domain: str) -> str:
+    """The landing page of the site domain as Markdown: what the site is and a linked table of every host."""
+    base = _link_domain(domain)
+
+    def name_cell(name: str, label: str) -> str:
+        return f'[{label}]({scheme}://{name}.{base}/)' if base else f'`{label}`'
+
+    rows = [f'| {name_cell(h.name, h.name)} | {h.character} | {h.root_says} |' for h in HOSTS.values()]
+    janus = name_cell('www.janus', f'www.janus.{base}' if base else 'www.janus')
+    no_links = [] if base else [_NO_LINKS, '']
+    lines = [
+        '# Pathological test site: hosts that misbehave on purpose', '',
+        *(line for paragraph in _LANDING_PITCH for line in (paragraph, '')),
+        '## What it is', '', _LANDING_INTRO[0], '', _LANDING_INTRO[1], '',
+        '## Hosts', '', *no_links, '| Host | Character | What the host root says |', '| --- | --- | --- |',
+        *rows, '', f'The host `janus` also answers at its second name, {janus}.', '',
+        '## How a host is selected', '', _SELECTION.format(url=f'{scheme}://{domain}/'), '',
+        '## How time works', '', _LANDING_TIME, '',
+        '## Source', '', f'The source code is at [{_SOURCE}]({_SOURCE}), under the MIT licence.', '']
+    return _sitemap_safe('\n'.join(lines))
+
+
+def _of_operator() -> str:
+    """' of <name>' with the operator variable, or the default when it is unset; '' when it is blank."""
+    name = os.environ.get(OPERATOR_VARIABLE, DEFAULT_OPERATOR).strip()
+    return f' of {name}' if name else ''
+
+
+def _link_domain(domain: str) -> Optional[str]:
+    """The domain under which the host names are linked: localhost for a loopback IP, None for another IP literal."""
+    if domain.startswith('['):
+        address, _, rest = domain[1:].partition(']')
+        port = rest.removeprefix(':')
+    else:
+        address, _, port = domain.partition(':')
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError:
+        return domain
+    return f'localhost{":" + port if port else ""}' if ip.is_loopback else None
+
+
+def _sitemap_safe(markdown: str) -> str:
+    """The Markdown with no robots.txt sitemap directive: a README also answers /robots.txt on some hosts."""
+    return re.sub(r'(?i)(sitemap):', r'\1', markdown)
+
+
+def _inline(value: str) -> str:
+    """Code spans and links of one line of Markdown, as HTML."""
+    parts = re.split(r'`([^`]*)`', value)
+    out = []
+    for i, part in enumerate(parts):
+        if i % 2:
+            out.append(f'<code>{escape(part)}</code>')
+        else:
+            out.append(re.sub(r'\[([^\]]+)\]\(([^)\s]+)\)', r'<a href="\2">\1</a>', escape(part)))
+    return ''.join(out)
+
+
+def _cells(row: str) -> list[str]:
+    """The cells of one Markdown table row."""
+    return [cell.strip() for cell in row.strip().strip('|').split('|')]
+
+
+def render(markdown: str) -> str:
+    """HTML of the Markdown that readme_markdown writes: headings, paragraphs, lists, tables, code."""
+    blocks, lines, i = [], markdown.split('\n'), 0
+    while i < len(lines):
+        line = lines[i]
+        if line.startswith('```'):
+            end = lines.index('```', i + 1)
+            blocks.append(f'<pre><code>{escape(chr(10).join(lines[i + 1:end]))}</code></pre>')
+            i = end + 1
+            continue
+        group = []
+        while i < len(lines) and lines[i] and not lines[i].startswith('```'):
+            group.append(lines[i])
+            i += 1
+        if not group:
+            i += 1
+        elif group[0].startswith('#'):
+            level = len(group[0]) - len(group[0].lstrip('#'))
+            blocks.append(f'<h{level}>{_inline(group[0][level:].strip())}</h{level}>')
+        elif group[0].startswith('- '):
+            blocks.append('<ul>\n' + ''.join(f'<li>{_inline(g[2:])}</li>\n' for g in group) + '</ul>')
+        elif group[0].startswith('|'):
+            head = ''.join(f'<th>{_inline(c)}</th>' for c in _cells(group[0]))
+            body = ''.join('<tr>' + ''.join(f'<td>{_inline(c)}</td>' for c in _cells(g)) + '</tr>\n' for g in group[2:])
+            blocks.append(f'<table>\n<tr>{head}</tr>\n{body}</table>')
+        else:
+            blocks.append(f'<p>{_inline(" ".join(group))}</p>')
+    return '\n'.join(blocks)

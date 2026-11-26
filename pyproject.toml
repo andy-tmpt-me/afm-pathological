@@ -1,0 +1,19 @@
+[project]
+name = "afm-pathological"
+version = "0.1.0"
+description = "A stateless test website whose hosts and pages behave like difficult websites, for tests of crawlers and scrapers"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.3",
+    "flake8>=7.1.1",
+    "pylint>=3.2.7",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.uv]
+package = false
