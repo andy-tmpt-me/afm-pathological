@@ -169,6 +169,8 @@ def test_link_preview_tags(fetch):
     html = fetch('/', host=DOMAIN).body.decode()
     head = html[:html.index('</head>')]
     assert f'<meta property="og:title" content="{PREVIEW_TITLE}">' in head
+    assert f'<title>{PREVIEW_TITLE}</title>' in head
+    assert '<h1>Pathological test site: hosts that misbehave on purpose</h1>' in html
     assert PREVIEW_TITLE.startswith('Pathological Webserver: ') and PREVIEW_TITLE.endswith(PREVIEW_DESCRIPTION[1:])
     assert f'<meta property="og:description" content="{PREVIEW_DESCRIPTION}">' in head
     assert PREVIEW_DESCRIPTION[::-1].startswith('∀ ') and PREVIEW_DESCRIPTION.startswith('˙')

@@ -24,14 +24,15 @@ def _clock(request: Request) -> Response:
 _NARROW_STYLE = '<style>table, pre {display: block; overflow-x: auto}</style>\n'
 
 
-def _markdown_page(markdown: str, path: str, head_html: str = '') -> Response:
-    """A README: HTML at / and Markdown at /README.md."""
+def _markdown_page(markdown: str, path: str, head_html: str = '', title: str | None = None) -> Response:
+    """A README: HTML at / and Markdown at /README.md; the <title> is the heading unless a title is given."""
     if path == '/README.md':
         return text(markdown, content_type='text/markdown; charset=utf-8')
     heading, _, rest = markdown.partition('\n')
+    heading = heading.removeprefix('# ')
     # no-cache: a browser asks again each time, so a person sees a new README right after a deploy
-    return html(page(heading.removeprefix('# '), readme.render(rest.strip('\n')),
-                     readme.favicon_html() + _NARROW_STYLE + head_html),
+    return html(page(title or heading, readme.render(rest.strip('\n')),
+                     readme.favicon_html() + _NARROW_STYLE + head_html, heading),
                 headers={'cache-control': 'no-cache'})
 
 
@@ -51,7 +52,7 @@ def _landing(request: Request) -> Response:
     if request.path in ('/', '/README.md'):
         domain = request.host.lower().removeprefix('www.')
         response = _markdown_page(readme.landing_markdown(request.scheme, domain), request.path,
-                                  readme.preview_html())
+                                  readme.preview_html(), readme.PREVIEW_TITLE)
         if request.path == '/':  # the one page that a search engine can list; its links are not for a robot
             response.headers['x-robots-tag'] = 'nofollow'
         return response

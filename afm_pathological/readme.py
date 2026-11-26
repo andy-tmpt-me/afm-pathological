@@ -158,7 +158,8 @@ def _of_operator() -> str:
 
 
 # What a link preview of the landing page shows. The upside-down look-alike letters say "A web server that
-# misbehaves on purpose": the preview misbehaves too. Some platforms show the title only, so the title has them
+# misbehaves on purpose": the preview misbehaves too. Some platforms show the title only, so the title has them.
+# The title is also the <title> of the landing page
 PREVIEW_TITLE = 'Pathological Webserver: ǝsodɹnd uo sǝʌɐɥǝqsıɯ ʇɐɥʇ ɹǝʌɹǝs qǝʍ ∀'
 PREVIEW_DESCRIPTION = '˙ǝsodɹnd uo sǝʌɐɥǝqsıɯ ʇɐɥʇ ɹǝʌɹǝs qǝʍ ∀'
 
