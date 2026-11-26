@@ -170,6 +170,7 @@ PREVIEW_AUTHOR = 'Andy Jenkins'  # who wrote the introduction
 # upside down as the title is. A preview needs the full URL of its image
 PREVIEW_IMAGE_PATH = '/preview.jpg'
 PREVIEW_IMAGE_SIZE = 1200  # pixels, width and height
+PREVIEW_IMAGE_ALT = 'An upside-down teapot with the upside-down text HTTP/1.1 418 I\'m a teapot'
 
 
 def preview_html(scheme: str, domain: str) -> str:
@@ -178,10 +179,16 @@ def preview_html(scheme: str, domain: str) -> str:
             'og:author': PREVIEW_AUTHOR,
             'og:image': f'{scheme}://{domain}{PREVIEW_IMAGE_PATH}', 'og:image:type': 'image/jpeg',
             'og:image:width': str(PREVIEW_IMAGE_SIZE), 'og:image:height': str(PREVIEW_IMAGE_SIZE),
-            'og:image:alt': 'An upside-down teapot with the upside-down text HTTP/1.1 418 I\'m a teapot'}
+            'og:image:alt': PREVIEW_IMAGE_ALT}
     # Some preview readers take the author from the plain author tag and not from og:author
     return f'<meta name="author" content="{escape(PREVIEW_AUTHOR)}">\n' + ''.join(
         f'<meta property="{name}" content="{escape(value)}">\n' for name, value in tags.items())
+
+
+def preview_image_html() -> str:
+    """The preview image for the body of the landing page, under its heading, at most 480 pixels wide."""
+    return (f'<p><img src="{PREVIEW_IMAGE_PATH}" alt="{escape(PREVIEW_IMAGE_ALT)}" width="480" height="480" '
+            'style="max-width: 100%; height: auto"></p>\n')
 
 
 def favicon_html() -> str:
