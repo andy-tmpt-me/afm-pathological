@@ -192,5 +192,5 @@ def test_link_preview_image(fetch, scheme, host):
     assert image.body[:3] == b'\xff\xd8\xff' and 50_000 < len(image.body) < 500_000
     assert fetch('/preview.jpg', host=host, method='HEAD').body == b''
     assert fetch('/preview.jpg').status == 404
-    assert re.search(r'</h1>\n<p><img src="/preview.jpg" alt="An upside-down teapot[^"]*" width="480"', html)
+    assert re.search(r'</h1>\n<p><img class="teapot" src="/preview.jpg" alt="An upside-down teapot[^"]*" width="320"', html)
     assert '<img' not in fetch('/').body.decode() and '<img' not in fetch('/README.md', host=host).body.decode()

@@ -172,6 +172,10 @@ PREVIEW_IMAGE_PATH = '/preview.jpg'
 PREVIEW_IMAGE_SIZE = 1200  # pixels, width and height
 PREVIEW_IMAGE_ALT = 'An upside-down teapot with the upside-down text HTTP/1.1 418 I\'m a teapot'
 
+# The image is 320 pixels wide; on a narrow screen it has the width of the text, 480 pixels at most
+_PREVIEW_IMAGE_STYLE = ('<style>.teapot {max-width: 100%; height: auto} '
+                        '@media (max-width: 600px) {.teapot {width: 480px}}</style>\n')
+
 
 def preview_html(scheme: str, domain: str) -> str:
     """The Open Graph lines for the head of the landing page of a scheme and a site domain."""
@@ -180,15 +184,15 @@ def preview_html(scheme: str, domain: str) -> str:
             'og:image': f'{scheme}://{domain}{PREVIEW_IMAGE_PATH}', 'og:image:type': 'image/jpeg',
             'og:image:width': str(PREVIEW_IMAGE_SIZE), 'og:image:height': str(PREVIEW_IMAGE_SIZE),
             'og:image:alt': PREVIEW_IMAGE_ALT}
+    metas = ''.join(f'<meta property="{name}" content="{escape(value)}">\n' for name, value in tags.items())
     # Some preview readers take the author from the plain author tag and not from og:author
-    return f'<meta name="author" content="{escape(PREVIEW_AUTHOR)}">\n' + ''.join(
-        f'<meta property="{name}" content="{escape(value)}">\n' for name, value in tags.items())
+    return f'<meta name="author" content="{escape(PREVIEW_AUTHOR)}">\n' + metas + _PREVIEW_IMAGE_STYLE
 
 
 def preview_image_html() -> str:
-    """The preview image for the body of the landing page, under its heading, at most 480 pixels wide."""
-    return (f'<p><img src="{PREVIEW_IMAGE_PATH}" alt="{escape(PREVIEW_IMAGE_ALT)}" width="480" height="480" '
-            'style="max-width: 100%; height: auto"></p>\n')
+    """The preview image for the body of the landing page, under its heading."""
+    return (f'<p><img class="teapot" src="{PREVIEW_IMAGE_PATH}" alt="{escape(PREVIEW_IMAGE_ALT)}" width="320" '
+            'height="320"></p>\n')
 
 
 def favicon_html() -> str:
