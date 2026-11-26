@@ -1,3 +1,4 @@
+import hashlib
 import json
 import re
 from datetime import datetime, timezone
@@ -39,7 +40,7 @@ def test_site_domain_paths(fetch):
     assert json.loads(fetch('/clock', host=DOMAIN).body)['date'] == '2026-11-25'
     robots = fetch('/robots.txt', host=DOMAIN)
     assert robots.headers['content-type'].startswith('text/plain')
-    assert robots.body.decode() == 'User-agent: *\nAllow: /$\nAllow: /preview.jpg$\nDisallow: /\n'
+    assert robots.body.decode() == 'User-agent: *\nAllow: /$\nAllow: /preview.jpg\nDisallow: /\n'
     for path in ('/articles/starter', '/sitemap.xml', '/feed', '/nothing'):
         response = fetch(path, host=DOMAIN)
         assert response.status == 404 and response.headers['content-type'].startswith('text/plain'), path
@@ -185,13 +186,15 @@ def test_link_preview_tags(fetch):
 def test_link_preview_image(fetch, scheme, host):
     """The landing page names the preview image with its full URL; the site domain serves it as a JPEG."""
     html = respond(Request(host=host, path='/', scheme=scheme)).body.decode()
-    assert f'<meta property="og:image" content="{scheme}://{host}/preview.jpg">' in html
+    version = hashlib.sha256(fetch('/preview.jpg', host=host).body).hexdigest()[:8]
+    assert f'<meta property="og:image" content="{scheme}://{host}/preview.jpg?v={version}">' in html
+    assert fetch('/preview.jpg', host=host).headers['cache-control'] == 'no-cache'
     assert '<meta property="og:image:width" content="1200">' in html
     image = fetch('/preview.jpg', host=host)
     assert image.status == 200 and image.headers['content-type'] == 'image/jpeg'
     assert image.body[:3] == b'\xff\xd8\xff' and 50_000 < len(image.body) < 500_000
     assert fetch('/preview.jpg', host=host, method='HEAD').body == b''
     assert fetch('/preview.jpg').status == 404
-    tag = r'</h1>\n<p><img class="teapot" src="/preview.jpg" alt="An upside-down teapot[^"]*" width="320"'
+    tag = r'</h1>\n<p><img class="teapot" src="/preview.jpg\?v=[0-9a-f]{8}" alt="An upside-down[^"]*" width="320"'
     assert re.search(tag, html)
     assert '<img' not in fetch('/').body.decode() and '<img' not in fetch('/README.md', host=host).body.decode()

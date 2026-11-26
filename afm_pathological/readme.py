@@ -1,7 +1,9 @@
+import hashlib
 import ipaddress
 import os
 import re
 from html import escape
+from pathlib import Path
 from typing import Optional
 
 from afm_pathological.catalog import cases
@@ -170,6 +172,10 @@ PREVIEW_AUTHOR = 'Andy Jenkins'  # who wrote the introduction
 # upside down as the title is. A preview needs the full URL of its image
 PREVIEW_IMAGE_PATH = '/preview.jpg'
 PREVIEW_IMAGE_SIZE = 1200  # pixels, width and height
+PREVIEW_IMAGE = Path(__file__).with_name('preview.jpg').read_bytes()
+# The page links the image with a version from its content: a new picture has a new URL, so a browser or a preview
+# service that keeps the old picture does not show it
+PREVIEW_IMAGE_LINK = f'{PREVIEW_IMAGE_PATH}?v={hashlib.sha256(PREVIEW_IMAGE).hexdigest()[:8]}'
 PREVIEW_IMAGE_ALT = 'An upside-down teapot with the upside-down text HTTP/1.1 418 I\'m a teapot'
 
 # The image is 320 pixels wide; on a narrow screen it has the width of the text, 480 pixels at most
@@ -181,7 +187,7 @@ def preview_html(scheme: str, domain: str) -> str:
     """The Open Graph lines for the head of the landing page of a scheme and a site domain."""
     tags = {'og:type': 'website', 'og:title': PREVIEW_TITLE, 'og:description': PREVIEW_DESCRIPTION,
             'og:author': PREVIEW_AUTHOR,
-            'og:image': f'{scheme}://{domain}{PREVIEW_IMAGE_PATH}', 'og:image:type': 'image/jpeg',
+            'og:image': f'{scheme}://{domain}{PREVIEW_IMAGE_LINK}', 'og:image:type': 'image/jpeg',
             'og:image:width': str(PREVIEW_IMAGE_SIZE), 'og:image:height': str(PREVIEW_IMAGE_SIZE),
             'og:image:alt': PREVIEW_IMAGE_ALT}
     metas = ''.join(f'<meta property="{name}" content="{escape(value)}">\n' for name, value in tags.items())
@@ -191,7 +197,7 @@ def preview_html(scheme: str, domain: str) -> str:
 
 def preview_image_html() -> str:
     """The preview image for the body of the landing page, under its heading."""
-    return (f'<p><img class="teapot" src="{PREVIEW_IMAGE_PATH}" alt="{escape(PREVIEW_IMAGE_ALT)}" width="320" '
+    return (f'<p><img class="teapot" src="{PREVIEW_IMAGE_LINK}" alt="{escape(PREVIEW_IMAGE_ALT)}" width="320" '
             'height="320"></p>\n')
 
 
