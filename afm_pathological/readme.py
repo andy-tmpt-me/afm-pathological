@@ -163,6 +163,7 @@ def _of_operator() -> str:
 # The title is also the heading of the landing page. The description is the first sentence of the introduction
 PREVIEW_TITLE = 'Pathological: ǝsodɹnd uo sǝʌɐɥǝqsıɯ ʇɐɥʇ ɹǝʌɹǝs qǝʍ ∀'
 PREVIEW_DESCRIPTION = _LANDING_PITCH[0]
+PREVIEW_AUTHOR = 'Andy Jenkins'  # who wrote the introduction
 
 
 # The image of a link preview: the Utah teapot (a classic test object of computer graphics, and HTTP status 418),
@@ -174,10 +175,13 @@ PREVIEW_IMAGE_SIZE = 1200  # pixels, width and height
 def preview_html(scheme: str, domain: str) -> str:
     """The Open Graph lines for the head of the landing page of a scheme and a site domain."""
     tags = {'og:type': 'website', 'og:title': PREVIEW_TITLE, 'og:description': PREVIEW_DESCRIPTION,
+            'og:author': PREVIEW_AUTHOR,
             'og:image': f'{scheme}://{domain}{PREVIEW_IMAGE_PATH}', 'og:image:type': 'image/jpeg',
             'og:image:width': str(PREVIEW_IMAGE_SIZE), 'og:image:height': str(PREVIEW_IMAGE_SIZE),
             'og:image:alt': 'An upside-down teapot with the upside-down text HTTP/1.1 418 I\'m a teapot'}
-    return ''.join(f'<meta property="{name}" content="{escape(value)}">\n' for name, value in tags.items())
+    # Some preview readers take the author from the plain author tag and not from og:author
+    return f'<meta name="author" content="{escape(PREVIEW_AUTHOR)}">\n' + ''.join(
+        f'<meta property="{name}" content="{escape(value)}">\n' for name, value in tags.items())
 
 
 def favicon_html() -> str:

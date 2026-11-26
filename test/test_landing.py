@@ -170,6 +170,8 @@ def test_link_preview_tags(fetch):
     head = html[:html.index('</head>')]
     assert f'<meta property="og:title" content="{PREVIEW_TITLE}">' in head
     assert f'<title>{PREVIEW_TITLE}</title>' in head
+    assert '<meta property="og:author" content="Andy Jenkins">' in head
+    assert '<meta name="author" content="Andy Jenkins">' in head and 'name="author"' not in fetch('/').body.decode()
     assert f'<h1>{PREVIEW_TITLE}</h1>' in html
     assert fetch('/README.md', host=DOMAIN).body.decode().startswith(f'# {PREVIEW_TITLE}\n')
     assert PREVIEW_TITLE.startswith('Pathological: ') and PREVIEW_TITLE.endswith(' ∀')
