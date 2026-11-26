@@ -2,6 +2,7 @@ import hashlib
 import json
 from datetime import timezone
 from email.utils import parsedate_to_datetime
+from pathlib import Path
 
 from afm_pathological import catalog, readme
 from afm_pathological.clock import EPOCH, day_number, http_date, today
@@ -42,8 +43,10 @@ def _unknown_host() -> Response:
     return response
 
 
-# A robot can read the landing page and nothing else: the longest rule that matches a path wins, `$` ends a path
-_LANDING_ROBOTS = 'User-agent: *\nAllow: /$\nDisallow: /\n'
+# A robot can read the landing page, the image of its link preview and nothing else: the longest rule that matches
+# a path wins, `$` ends a path
+_LANDING_ROBOTS = f'User-agent: *\nAllow: /$\nAllow: {readme.PREVIEW_IMAGE_PATH}$\nDisallow: /\n'
+_PREVIEW_IMAGE = Path(__file__).with_name('preview.jpg').read_bytes()
 
 
 def _landing(request: Request) -> Response:
@@ -51,12 +54,14 @@ def _landing(request: Request) -> Response:
     if request.path in ('/', '/README.md'):
         domain = request.host.lower().removeprefix('www.')
         response = _markdown_page(readme.landing_markdown(request.scheme, domain), request.path,
-                                  readme.preview_html())
+                                  readme.preview_html(request.scheme, domain))
         if request.path == '/':  # the one page that a search engine can list; its links are not for a robot
             response.headers['x-robots-tag'] = 'nofollow'
         return response
     if request.path == '/clock':
         return _clock(request)
+    if request.path == readme.PREVIEW_IMAGE_PATH:
+        return Response(200, {'content-type': 'image/jpeg'}, _PREVIEW_IMAGE)
     return text(_LANDING_ROBOTS) if request.path == '/robots.txt' else _unknown_host()
 
 

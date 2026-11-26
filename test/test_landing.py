@@ -39,7 +39,7 @@ def test_site_domain_paths(fetch):
     assert json.loads(fetch('/clock', host=DOMAIN).body)['date'] == '2026-11-25'
     robots = fetch('/robots.txt', host=DOMAIN)
     assert robots.headers['content-type'].startswith('text/plain')
-    assert robots.body.decode() == 'User-agent: *\nAllow: /$\nDisallow: /\n'
+    assert robots.body.decode() == 'User-agent: *\nAllow: /$\nAllow: /preview.jpg$\nDisallow: /\n'
     for path in ('/articles/starter', '/sitemap.xml', '/feed', '/nothing'):
         response = fetch(path, host=DOMAIN)
         assert response.status == 404 and response.headers['content-type'].startswith('text/plain'), path
@@ -165,15 +165,28 @@ def test_related_projects_table(fetch):
 
 
 def test_link_preview_tags(fetch):
-    """The landing page has the preview title and the upside-down description in its head; a host README has none."""
+    """The landing page has the preview title and description in its head; a host README has none."""
     html = fetch('/', host=DOMAIN).body.decode()
     head = html[:html.index('</head>')]
     assert f'<meta property="og:title" content="{PREVIEW_TITLE}">' in head
     assert f'<title>{PREVIEW_TITLE}</title>' in head
     assert f'<h1>{PREVIEW_TITLE}</h1>' in html
     assert fetch('/README.md', host=DOMAIN).body.decode().startswith(f'# {PREVIEW_TITLE}\n')
-    assert PREVIEW_TITLE.startswith('Pathological: ') and PREVIEW_TITLE.endswith(PREVIEW_DESCRIPTION[1:])
+    assert PREVIEW_TITLE.startswith('Pathological: ') and PREVIEW_TITLE.endswith(' ∀')
     assert f'<meta property="og:description" content="{PREVIEW_DESCRIPTION}">' in head
-    assert PREVIEW_DESCRIPTION[::-1].startswith('∀ ') and PREVIEW_DESCRIPTION.startswith('˙')
+    assert PREVIEW_DESCRIPTION.startswith('Web servers are unpredictable') and PREVIEW_DESCRIPTION in html
     for other in (fetch('/'), fetch('/README.md', host=DOMAIN)):
         assert 'property="og:' not in other.body.decode()
+
+
+@pytest.mark.parametrize('scheme, host', [('https', DOMAIN), ('http', 'localhost:8080')])
+def test_link_preview_image(fetch, scheme, host):
+    """The landing page names the preview image with its full URL; the site domain serves it as a JPEG."""
+    html = respond(Request(host=host, path='/', scheme=scheme)).body.decode()
+    assert f'<meta property="og:image" content="{scheme}://{host}/preview.jpg">' in html
+    assert '<meta property="og:image:width" content="1200">' in html
+    image = fetch('/preview.jpg', host=host)
+    assert image.status == 200 and image.headers['content-type'] == 'image/jpeg'
+    assert image.body[:3] == b'\xff\xd8\xff' and 50_000 < len(image.body) < 500_000
+    assert fetch('/preview.jpg', host=host, method='HEAD').body == b''
+    assert fetch('/preview.jpg').status == 404

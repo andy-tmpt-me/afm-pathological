@@ -119,8 +119,8 @@ Each host serves the same page families at the same paths, unless the table of h
 A public instance runs at `https://pathological.answersfrom.me/`, a landing page that links to every host, and at
 `https://<host>.pathological.answersfrom.me/`, for example `https://breadcrumbs.pathological.answersfrom.me/`.
 It is best effort: it can be rate-limited or capped at any time. Every response has
-`X-Robots-Tag: noindex, nofollow`, except the landing page: its `robots.txt` allows `/` only, so that a search
-engine or a link preview can read that one page.
+`X-Robots-Tag: noindex, nofollow`, except the landing page: its `robots.txt` allows `/` and the image of the
+link preview only, so that a search engine or a link preview can read that one page.
 
 ## Configuration
 

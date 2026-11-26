@@ -63,7 +63,8 @@ _SELECTION = (
     '`X-Pathological-Host: <host name>` replaces the `Host` header, so `curl -H \'X-Pathological-Host: breadcrumbs\' '
     '{url}` reaches `breadcrumbs` through this address; a value that is not a host name answers 404 with the list '
     'of host names on every path. With no such header, a `Host` that names no host answers this page at `/` (as '
-    'Markdown at `/README.md`), `/clock`, a `robots.txt` that allows only this page, and 404 on every other path.')
+    'Markdown at `/README.md`), `/clock`, `/preview.jpg` (the image of a link preview), a `robots.txt` that allows '
+    'only this page and that image, and 404 on every other path.')
 _NO_LINKS = ('This server is reached by an IP address, which has no host names under it, so the hosts below are not '
              'links: send the request header `X-Pathological-Host: <host name>` to reach a host.')
 _LANDING_TIME = (
@@ -159,14 +160,23 @@ def _of_operator() -> str:
 
 # What a link preview of the landing page shows. The upside-down look-alike letters say "A web server that
 # misbehaves on purpose": the preview misbehaves too. Some platforms show the title only, so the title has them.
-# The title is also the heading of the landing page
+# The title is also the heading of the landing page. The description is the first sentence of the introduction
 PREVIEW_TITLE = 'Pathological: ǝsodɹnd uo sǝʌɐɥǝqsıɯ ʇɐɥʇ ɹǝʌɹǝs qǝʍ ∀'
-PREVIEW_DESCRIPTION = '˙ǝsodɹnd uo sǝʌɐɥǝqsıɯ ʇɐɥʇ ɹǝʌɹǝs qǝʍ ∀'
+PREVIEW_DESCRIPTION = _LANDING_PITCH[0]
 
 
-def preview_html() -> str:
-    """The Open Graph lines for the head of the landing page."""
-    tags = {'og:type': 'website', 'og:title': PREVIEW_TITLE, 'og:description': PREVIEW_DESCRIPTION}
+# The image of a link preview: the Utah teapot (a classic test object of computer graphics, and HTTP status 418),
+# upside down as the title is. A preview needs the full URL of its image
+PREVIEW_IMAGE_PATH = '/preview.jpg'
+PREVIEW_IMAGE_SIZE = 1200  # pixels, width and height
+
+
+def preview_html(scheme: str, domain: str) -> str:
+    """The Open Graph lines for the head of the landing page of a scheme and a site domain."""
+    tags = {'og:type': 'website', 'og:title': PREVIEW_TITLE, 'og:description': PREVIEW_DESCRIPTION,
+            'og:image': f'{scheme}://{domain}{PREVIEW_IMAGE_PATH}', 'og:image:type': 'image/jpeg',
+            'og:image:width': str(PREVIEW_IMAGE_SIZE), 'og:image:height': str(PREVIEW_IMAGE_SIZE),
+            'og:image:alt': 'An upside-down teapot with the upside-down text HTTP/1.1 418 I\'m a teapot'}
     return ''.join(f'<meta property="{name}" content="{escape(value)}">\n' for name, value in tags.items())
 
 
