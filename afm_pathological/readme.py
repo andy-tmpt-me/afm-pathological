@@ -157,6 +157,18 @@ def _of_operator() -> str:
     return f' of {name}' if name else ''
 
 
+# What a link preview of the landing page shows. The description is "A web server that misbehaves on purpose."
+# in upside-down look-alike letters: the preview misbehaves too
+PREVIEW_TITLE = 'A Pathological Webserver'
+PREVIEW_DESCRIPTION = '˙ǝsodɹnd uo sǝʌɐɥǝqsıɯ ʇɐɥʇ ɹǝʌɹǝs qǝʍ ∀'
+
+
+def preview_html() -> str:
+    """The Open Graph lines for the head of the landing page."""
+    tags = {'og:type': 'website', 'og:title': PREVIEW_TITLE, 'og:description': PREVIEW_DESCRIPTION}
+    return ''.join(f'<meta property="{name}" content="{escape(value)}">\n' for name, value in tags.items())
+
+
 def favicon_html() -> str:
     """The <link rel="icon"> line for the head of a page, or '' when the favicon variable is unset or blank."""
     url = os.environ.get(FAVICON_VARIABLE, '').strip()

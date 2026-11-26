@@ -50,7 +50,8 @@ def _landing(request: Request) -> Response:
     """The answer for the site domain, a Host that names no host: the landing page, /clock and robots.txt."""
     if request.path in ('/', '/README.md'):
         domain = request.host.lower().removeprefix('www.')
-        response = _markdown_page(readme.landing_markdown(request.scheme, domain), request.path)
+        response = _markdown_page(readme.landing_markdown(request.scheme, domain), request.path,
+                                  readme.preview_html())
         if request.path == '/':  # the one page that a search engine can list; its links are not for a robot
             response.headers['x-robots-tag'] = 'nofollow'
         return response
