@@ -139,7 +139,7 @@ def landing_markdown(scheme: str, domain: str) -> str:
     no_links = [] if base else [_NO_LINKS, '']
     related = [f'| [{name}]({url}) | {what} |' for name, url, what in RELATED_PROJECTS]
     lines = [
-        '# Pathological test site: hosts that misbehave on purpose', '',
+        f'# {PREVIEW_TITLE}', '',
         *(line for paragraph in _LANDING_PITCH for line in (paragraph, '')),
         '## What it is', '', _LANDING_INTRO[0], '', _LANDING_INTRO[1], '',
         '## Hosts', '', *no_links, '| Host | Character | What the host root says |', '| --- | --- | --- |',
@@ -159,7 +159,7 @@ def _of_operator() -> str:
 
 # What a link preview of the landing page shows. The upside-down look-alike letters say "A web server that
 # misbehaves on purpose": the preview misbehaves too. Some platforms show the title only, so the title has them.
-# The title is also the <title> of the landing page
+# The title is also the heading of the landing page
 PREVIEW_TITLE = 'Pathological Webserver: ǝsodɹnd uo sǝʌɐɥǝqsıɯ ʇɐɥʇ ɹǝʌɹǝs qǝʍ ∀'
 PREVIEW_DESCRIPTION = '˙ǝsodɹnd uo sǝʌɐɥǝqsıɯ ʇɐɥʇ ɹǝʌɹǝs qǝʍ ∀'
 

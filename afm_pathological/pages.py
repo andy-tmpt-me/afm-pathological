@@ -8,11 +8,11 @@ from afm_pathological.content import Article, article
 _VIEWPORT = '<meta name="viewport" content="width=device-width, initial-scale=1">'
 
 
-def page(title: str, body_html: str, head_html: str = '', heading: str | None = None) -> str:
-    """A complete HTML document with the title as <title> and, when no heading is given, as <h1>."""
+def page(title: str, body_html: str, head_html: str = '') -> str:
+    """A complete HTML document with the title as <title> and <h1>."""
     head = (f'<meta charset="utf-8">\n{_VIEWPORT}\n<title>{escape(title)}</title>\n{head_html}').rstrip('\n')
     return (f'<!DOCTYPE html>\n<html lang="en">\n<head>\n{head}\n</head>\n'
-            f'<body>\n<h1>{escape(heading or title)}</h1>\n{body_html}\n</body>\n</html>\n')
+            f'<body>\n<h1>{escape(title)}</h1>\n{body_html}\n</body>\n</html>\n')
 
 
 def links_html(links: Sequence[str | tuple[str, str]]) -> str:

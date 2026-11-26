@@ -21,7 +21,7 @@ def test_site_domain_root_is_the_landing_page(fetch, host):
     """A Host that names no host answers / with the landing page, for GET and HEAD."""
     response = fetch('/', host=host)
     assert response.status == 200 and response.headers['content-type'] == 'text/html; charset=utf-8'
-    assert '<h1>Pathological test site' in response.body.decode()
+    assert '<h1>Pathological Webserver: ' in response.body.decode()
     head = fetch('/', host=host, method='HEAD')
     assert head.status == 200 and head.body == b'' and head.headers['content-length'] == str(len(response.body))
 
@@ -170,7 +170,8 @@ def test_link_preview_tags(fetch):
     head = html[:html.index('</head>')]
     assert f'<meta property="og:title" content="{PREVIEW_TITLE}">' in head
     assert f'<title>{PREVIEW_TITLE}</title>' in head
-    assert '<h1>Pathological test site: hosts that misbehave on purpose</h1>' in html
+    assert f'<h1>{PREVIEW_TITLE}</h1>' in html
+    assert fetch('/README.md', host=DOMAIN).body.decode().startswith(f'# {PREVIEW_TITLE}\n')
     assert PREVIEW_TITLE.startswith('Pathological Webserver: ') and PREVIEW_TITLE.endswith(PREVIEW_DESCRIPTION[1:])
     assert f'<meta property="og:description" content="{PREVIEW_DESCRIPTION}">' in head
     assert PREVIEW_DESCRIPTION[::-1].startswith('∀ ') and PREVIEW_DESCRIPTION.startswith('˙')
