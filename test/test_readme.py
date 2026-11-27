@@ -182,10 +182,11 @@ def test_pages_fit_a_narrow_screen(fetch):
     """Each page has a viewport tag; a README page lets a wide table or code block scroll by itself."""
     article = fetch('/articles/starter', host='breadcrumbs.pathological.answersfrom.me').body.decode()
     assert '<meta name="viewport" content="width=device-width, initial-scale=1">' in article
+    assert '<style' not in article
     for host in ('breadcrumbs.pathological.answersfrom.me', 'pathological.answersfrom.me'):
         html = fetch('/', host=host).body.decode()
         assert '<meta name="viewport" content="width=device-width, initial-scale=1">' in html
-        assert '<style>table, pre {display: block; overflow-x: auto}</style>' in html
+        assert 'table, pre {display: block; overflow-x: auto}' in html and 'th, td {padding:' in html
         assert fetch('/', host=host).headers['cache-control'] == 'no-cache'
 
 

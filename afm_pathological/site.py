@@ -20,8 +20,26 @@ def _clock(request: Request) -> Response:
     return response
 
 
-# On a narrow screen a wide table or code block scrolls by itself, not the whole page
-_NARROW_STYLE = '<style>table, pre {display: block; overflow-x: auto}</style>\n'
+# The look of a README and of the landing page; the test pages have no style. On a narrow screen a wide table
+# or code block scrolls by itself, not the whole page. The gray tones are half transparent, so that they fit a
+# light and a dark color scheme
+_README_STYLE = '''<style>
+:root {color-scheme: light dark}
+body {font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 66rem; margin: 0 auto;
+      padding: 1.5rem 1.25rem 4rem}
+h1 {font-size: 1.7rem; line-height: 1.25}
+h2 {font-size: 1.25rem; margin-top: 2.2rem; padding-bottom: .3rem; border-bottom: 1px solid #8886}
+code {font: .9em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: #8883; padding: .1em .3em;
+      border-radius: 4px}
+pre {background: #8882; padding: .8rem 1rem; border-radius: 6px}
+pre code {background: none; padding: 0}
+table, pre {display: block; overflow-x: auto}
+table {border-collapse: collapse; font-size: .95rem}
+th, td {padding: .45rem .9rem .45rem 0; border-bottom: 1px solid #8884; text-align: left; vertical-align: top}
+th, td:first-child {white-space: nowrap}
+th {border-bottom: 2px solid #8888}
+</style>
+'''
 
 
 def _markdown_page(markdown: str, path: str, head_html: str = '', lead_html: str = '') -> Response:
@@ -31,7 +49,7 @@ def _markdown_page(markdown: str, path: str, head_html: str = '', lead_html: str
     heading, _, rest = markdown.partition('\n')
     # no-cache: a browser asks again each time, so a person sees a new README right after a deploy
     return html(page(heading.removeprefix('# '), lead_html + readme.render(rest.strip('\n')),
-                     readme.favicon_html() + _NARROW_STYLE + head_html),
+                     readme.favicon_html() + _README_STYLE + head_html),
                 headers={'cache-control': 'no-cache'})
 
 
